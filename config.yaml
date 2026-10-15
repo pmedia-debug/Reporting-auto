@@ -21,22 +21,22 @@ filters:
 
 pages:
   - {label: "/", path: "/", heading_row: 17}
-  - {label: "/social-media-analytics/", path: "/social-media-analytics/", heading_row: 24}
-  - {label: "/social-media-engagement/", path: "/social-media-engagement/", heading_row: 31}
-  - {label: "/social-media-publishing/", path: "/social-media-publishing/", heading_row: 38}
-  - {label: "/social-media-copilot/", path: "/social-media-copilot/", heading_row: 45}
-  - {label: "/social-media-collaboration/", path: "/social-media-collaboration/", heading_row: 52}
-  - {label: "/social-media-content-creation/", path: "/social-media-content-creation/", heading_row: 59}
+  - {label: "/social-media-analytics-tool/", path: "/social-media-analytics-tool/", heading_row: 24}
+  - {label: "/social-media-engagement-tool/", path: "/social-media-engagement-tool/", heading_row: 31}
+  - {label: "/social-media-posting-tool/", path: "/social-media-posting-tool/", heading_row: 38}
+  - {label: "/ai-social-media-manager/", path: "/ai-social-media-manager/", heading_row: 45}
+  - {label: "/social-media-collaboration-tool/", path: "/social-media-collaboration-tool/", heading_row: 52}
+  - {label: "/social-media-content-creation-tool/", path: "/social-media-content-creation-tool/", heading_row: 59}
   - {label: "/pricing/", path: "/pricing/", heading_row: 66}
-  - {label: "/facebook/", path: "/facebook/", heading_row: 73}
-  - {label: "/instagram/", path: "/instagram/", heading_row: 80}
-  - {label: "/pinterest/", path: "/pinterest/", heading_row: 87}
-  - {label: "/youtube/", path: "/youtube/", heading_row: 94}
-  - {label: "/linkedin/", path: "/linkedin/", heading_row: 101}
-  - {label: "/tiktok/", path: "/tiktok/", heading_row: 108}
-  - {label: "/google-business-profile/", path: "/google-business-profile/", heading_row: 115}
-  - {label: "/twitter/", path: "/twitter/", heading_row: 122}
-  - {label: "/threads/", path: "/threads/", heading_row: 129}
-  - {label: "/bluesky/", path: "/bluesky/", heading_row: 136}
+  - {label: "/facebook-post-scheduler/", path: "/facebook-post-scheduler/", heading_row: 73}
+  - {label: "/instagram-post-scheduler/", path: "/instagram-post-scheduler/", heading_row: 80}
+  - {label: "/pinterest-scheduler-tool/", path: "/pinterest-scheduler-tool/", heading_row: 87}
+  - {label: "/youtube-scheduler/", path: "/youtube-scheduler/", heading_row: 94}
+  - {label: "/linkedin-post-scheduler/", path: "/linkedin-post-scheduler/", heading_row: 101}
+  - {label: "/tiktok-post-scheduler/", path: "/tiktok-post-scheduler/", heading_row: 108}
+  - {label: "/google-business-profile-scheduler/", path: "/google-business-profile-scheduler/", heading_row: 115}
+  - {label: "/twitter-post-scheduler/", path: "/twitter-post-scheduler/", heading_row: 122}
+  - {label: "/threads-post-scheduler/", path: "/threads-post-scheduler/", heading_row: 129}
+  - {label: "/bluesky-post-scheduler/", path: "/bluesky-post-scheduler/", heading_row: 136}
   - {label: "/universal-posting/", path: "/universal-posting/", heading_row: 143}
   - {label: "/Blog", heading_row: 150, blog_prefix_group: true}
