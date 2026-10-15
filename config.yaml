@@ -1,0 +1,42 @@
+report:
+  sheet_tab: "Sheet1"
+  first_week_column: "L"
+  date_header_row: 2
+  timezone: "Asia/Kolkata"
+  week_start: "monday"
+  min_days_after_week_end: 3
+  # Match the landing page URLs actually used by the GA4 property.
+  ga4_landing_page_dimension: "landingPagePlusQueryString"
+  signup_event_name: "sign_up"
+  blog_path_prefix: "/blog/" # Aggregate all blog landing pages, not an approved URL list
+  # GA4 counts signup events, not unique signing-up users.
+
+properties:
+  ga4_property_id: "352350939"
+  gsc_site_url: "sc-domain:socialbee.com" # Or exact URL-prefix property, including trailing slash.
+  site_base_url: "https://socialbee.com"
+
+filters:
+  branded_query_regex: "social bee|socialbee|socialvee|socialbe|conciergebee|social be |socialb |social media bee|sociabee"
+
+pages:
+  - {label: "/", path: "/", heading_row: 17}
+  - {label: "/social-media-analytics/", path: "/social-media-analytics/", heading_row: 24}
+  - {label: "/social-media-engagement/", path: "/social-media-engagement/", heading_row: 31}
+  - {label: "/social-media-publishing/", path: "/social-media-publishing/", heading_row: 38}
+  - {label: "/social-media-copilot/", path: "/social-media-copilot/", heading_row: 45}
+  - {label: "/social-media-collaboration/", path: "/social-media-collaboration/", heading_row: 52}
+  - {label: "/social-media-content-creation/", path: "/social-media-content-creation/", heading_row: 59}
+  - {label: "/pricing/", path: "/pricing/", heading_row: 66}
+  - {label: "/facebook/", path: "/facebook/", heading_row: 73}
+  - {label: "/instagram/", path: "/instagram/", heading_row: 80}
+  - {label: "/pinterest/", path: "/pinterest/", heading_row: 87}
+  - {label: "/youtube/", path: "/youtube/", heading_row: 94}
+  - {label: "/linkedin/", path: "/linkedin/", heading_row: 101}
+  - {label: "/tiktok/", path: "/tiktok/", heading_row: 108}
+  - {label: "/google-business-profile/", path: "/google-business-profile/", heading_row: 115}
+  - {label: "/twitter/", path: "/twitter/", heading_row: 122}
+  - {label: "/threads/", path: "/threads/", heading_row: 129}
+  - {label: "/bluesky/", path: "/bluesky/", heading_row: 136}
+  - {label: "/universal-posting/", path: "/universal-posting/", heading_row: 143}
+  - {label: "/Blog", heading_row: 150, blog_prefix_group: true}
