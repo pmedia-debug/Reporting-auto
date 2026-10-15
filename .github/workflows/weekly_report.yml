@@ -2,16 +2,15 @@
 name: SocialBee Weekly SEO Report
 
 on:
-  
-schedule:
-  # Check every day at 10:00 AM IST
-  - cron: "30 4 * * *"
-  
-  # Allow manual execution
+  # Daily check at 10:00 AM IST (04:30 UTC)
+  schedule:
+    - cron: "30 4 * * *"
+
+  # Allow manual testing
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Preview only (do not update Google Sheet)"
+        description: "Preview only - do not update Google Sheet"
         required: true
         type: boolean
         default: true
@@ -25,9 +24,9 @@ concurrency:
 
 jobs:
   update-report:
-    name: Update SocialBee Weekly Report
+    name: Update SocialBee Report
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -44,22 +43,23 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install -r requirements.txt
 
       - name: Validate Python syntax
         run: python -m py_compile main.py
 
-      - name: Update Google Sheets report
+      - name: Run SocialBee reporting automation
         env:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
           PYTHONUNBUFFERED: "1"
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        shell: bash
         run: |
           if [ "$DRY_RUN" = "true" ]; then
-            echo "Running in preview mode"
+            echo "DRY RUN: No Google Sheet changes"
             python main.py --dry-run
           else
-            echo "Running live weekly report update"
+            echo "LIVE RUN: Updating Google Sheet"
             python main.py
           fi
