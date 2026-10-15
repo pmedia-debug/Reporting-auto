@@ -1,0 +1,27 @@
+
+name: SocialBee Weekly SEO Report
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Test GA4, GSC and Google Sheets
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+        run: python main.py --dry-run
