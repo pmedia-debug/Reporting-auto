@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse
 from datetime import date, datetime, timedelta
+from calendar import monthrange
 import json
 import logging
 import os
@@ -67,14 +68,57 @@ def quote_tab(name):
     return "'" + name.replace("'", "''") + "'"
 
 
+
+from calendar import monthrange
+
 def reporting_dates(tz, min_delay, date_override=None):
-    today = date.fromisoformat(date_override) if date_override else datetime.now(ZoneInfo(tz)).date()
-    this_monday = today - timedelta(days=today.weekday())
-    start = this_monday - timedelta(days=7)
-    end = start + timedelta(days=6)
-    if (today - end).days < min_delay:
-        raise ValueError("Reporting week is too recent for configured data delay")
+    today = (
+        date.fromisoformat(date_override)
+        if date_override
+        else datetime.now(ZoneInfo(tz)).date()
+    )
+
+    cutoff = today - timedelta(days=int(min_delay))
+
+    # Find the latest completed reporting period.
+    last_day = monthrange(cutoff.year, cutoff.month)[1]
+
+    ranges = [
+        (1, 7),
+        (8, 14),
+        (15, 21),
+        (22, 28),
+    ]
+
+    # Include remaining days at month end.
+    if last_day >= 29:
+        ranges.append((29, last_day))
+
+    eligible = [
+        (start_day, end_day)
+        for start_day, end_day in ranges
+        if end_day <= cutoff.day
+    ]
+
+    if eligible:
+        start_day, end_day = eligible[-1]
+        year, month = cutoff.year, cutoff.month
+    else:
+        # Latest eligible period is in the previous month.
+        previous_month = cutoff.replace(day=1) - timedelta(days=1)
+        year, month = previous_month.year, previous_month.month
+        last_day = previous_month.day
+
+        if last_day >= 29:
+            start_day, end_day = 29, last_day
+        else:
+            start_day, end_day = 22, last_day
+
+    start = date(year, month, start_day)
+    end = date(year, month, end_day)
+
     return start.isoformat(), end.isoformat()
+
 
 
 def aggregate(rows):
@@ -110,10 +154,17 @@ def gsc_filter(dimension, operator, expression):
 def verify_gsc_date(service, site, start, end):
     rows = gsc_report(service, site, start, end, dimensions=["date"])
     dates = {r["keys"][0] for r in rows}
-    expected = {(date.fromisoformat(start) + timedelta(days=i)).isoformat() for i in range(7)}
+
+start_date = date.fromisoformat(start)
+end_date = date.fromisoformat(end)
+
+    expected = {
+        (start_date + timedelta(days=i)).isoformat()
+        for i in range((end_date - start_date).days + 1)
+    }
+
     if not expected.issubset(dates):
         raise RuntimeError(f"Finalized GSC data missing dates: {sorted(expected - dates)}")
-
 
 def ga_filter(*items):
     return FilterExpression(and_group=FilterExpressionList(expressions=list(items)))
@@ -289,8 +340,12 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
-    if cfg["report"]["week_start"].lower() != "monday":
-        raise ValueError("This version is configured for Monday-Sunday reporting only")
+    
+if cfg["report"]["week_start"].lower() != "month_day_1_7":
+    raise ValueError(
+        "This version requires calendar date-wise reporting"
+    )
+
     start, end = reporting_dates(cfg["report"]["timezone"],
         cfg["report"]["min_days_after_week_end"], args.today)
     key = f"{start} to {end}"
