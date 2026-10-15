@@ -2,11 +2,11 @@
 name: SocialBee Weekly SEO Report
 
 on:
-  schedule:
-    # Every Wednesday at 10:00 AM IST
-    # GitHub Actions cron uses UTC
-    - cron: "30 4 * * 3"
-
+  
+schedule:
+  # Check every day at 10:00 AM IST
+  - cron: "30 4 * * *"
+  
   # Allow manual execution
   workflow_dispatch:
     inputs:
