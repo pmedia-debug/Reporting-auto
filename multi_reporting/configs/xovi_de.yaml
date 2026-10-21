@@ -1,7 +1,7 @@
 project: xovi_de
 properties:
   ga4_property_id: '446502138'
-  gsc_site_url: https://www.xovi.de/
+  gsc_site_url: sc-domain:xovi.de
   site_base_url: https://www.xovi.de
 spreadsheet_id_env: XOVI_DE_SHEET_ID
 filters:
