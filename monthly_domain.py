@@ -1,7 +1,7 @@
-"""Append-only monthly domain-wide SEO report, independent of weekly reports.
+"""Full-month SEO reporting: overview AND every page KPI in the weekly layout.
 
-Reads existing brand config.yaml and existing brand main.py API helpers.
-No historical cells are cleared or overwritten.
+Uses existing main.py API queries and strict Organic Search landing-page filters.
+Preserves the independent monthly tab and all previously reported columns.
 """
 from __future__ import annotations
 import argparse
@@ -119,37 +119,50 @@ def assert_layout(sheet, sid, tab, row_mapping):
         raise RuntimeError("Monthly domain tab layout not verified. " + '; '.join(errors) + ". Set monthly_domain.metric_rows to actual rows or adjust labels; no values written")
 
 def monthly_values(cfg, ga, gsc, start, end):
-    """Full-month queries, not the sum of the weekly report's CTR rows."""
-    prop=cfg['properties']
-    regex=cfg['filters']['branded_query_regex']
-    if not regex or str(regex).startswith('REPLACE_'):
-        raise ValueError('Brand regex not configured')
-    event=cfg['report']['signup_event_name']
-    if not event or str(event).startswith('REPLACE_'):
-        raise ValueError('Overall GA4 conversion event not configured')
-    site=prop['gsc_site_url']; pid=prop['ga4_property_id']
-    api.verify_gsc_date(gsc,site,start,end)
-    total=api.aggregate(api.gsc_report(gsc,site,start,end,aggregation='byProperty'))
-    branded=api.aggregate(api.gsc_report(gsc,site,start,end,
-        filters=[api.gsc_filter('query','includingRegex',regex)]))
-    nonbrand=api.aggregate(api.gsc_report(gsc,site,start,end,
-        filters=[api.gsc_filter('query','excludingRegex',regex)]))
-    # Both GA4 requests are session-channel Organic Search only, via main.ga4_report.
-    sessions=api.ga4_report(ga,pid,start,end,'sessions').get('__total__',0)
-    conversions=api.ga4_report(ga,pid,start,end,'eventCount',signup_event=event).get('__total__',0)
-    return {
-        'organic_sessions':sessions,
-        'nonbrand_impressions':nonbrand['impressions'],
-        'nonbrand_clicks':nonbrand['clicks'],
-        'nonbrand_ctr':nonbrand['ctr'],
-        'overall_impressions':total['impressions'],
-        'overall_clicks':total['clicks'],
-        'overall_ctr':total['ctr'],
-        'brand_impressions':branded['impressions'],
-        'brand_clicks':branded['clicks'],
-        'brand_ctr':branded['ctr'],
-        'conversions':conversions,
-    }
+    """Calculate ALL weekly-template metrics over the full calendar month.
+
+    Uses exactly the same Organic Search, exact landing URL, signup event,
+    branded-query, page/canonical and blog-prefix filters as main.py.
+    """
+    return api.planned_values(cfg, ga, gsc, start, end)
+
+
+def assert_page_layout(sheet, sid, tab, cfg):
+    """Verify the monthly sheet has the same page and KPI row positions.
+
+    Reads labels only in A:K; avoids touching date or KPI cells.
+    Rejects a different layout rather than silently writing the wrong rows.
+    """
+    pages = cfg["pages"]
+    for page in pages:
+        heading = int(page["heading_row"])
+        expected = str(page["label"]).strip().casefold()
+        # Restrict to labels/URLs, never read existing monthly KPI data.
+        result = sheet.spreadsheets().values().get(
+            spreadsheetId=sid,
+            range=f"{api.quote_tab(tab)}!A{heading}:K{heading+5}",
+            valueRenderOption="FORMATTED_VALUE",
+        ).execute().get("values", [])
+        label_row = result[0] if result else []
+        normalized = [str(v).strip().casefold() for v in label_row]
+        if expected not in normalized:
+            raise RuntimeError(
+                f"Monthly tab page heading mismatch at row {heading}: "
+                f"expected {page['label']!r}, found {label_row!r}. "
+                "Verify that monthly domain has the same row mapping as Sheet1."
+            )
+        expected_metrics = ["sessions", "impressions", "clicks", "ctr", "sign up"]
+        for offset, expected_metric in enumerate(expected_metrics, start=1):
+            row_values = result[offset] if len(result) > offset else []
+            labels = [str(v).strip().casefold() for v in row_values]
+            allowed = ("sign up", "signup", "signups", "free trial", "purchase") if offset == 5 else (expected_metric,)
+            if not any(v in allowed for v in labels):
+                raise RuntimeError(
+                    f"Monthly tab KPI label mismatch at row {heading+offset}: "
+                    f"expected {expected_metric!r}, found {row_values!r}. "
+                    "No data was written."
+                )
+
 
 def assert_blank(sheet, sid, tab, col, header_row, mapping):
     ranges=[f"{api.quote_tab(tab)}!{col}{r}" for r in [header_row,*mapping.values()]]
@@ -175,12 +188,16 @@ def run():
     tab=mc.get('sheet_tab','monthly domain')
     header_row=int(mc.get('date_header_row',2))
     first_month=mc.get('first_month','2026-10')
-    mapping=mc.get('metric_rows',DEFAULT_ROWS)
-    if set(mapping)!=set(DEFAULT_ROWS) or len(set(int(x) for x in mapping.values()))!=11:
+    overview_mapping=mc.get('metric_rows',DEFAULT_ROWS)
+    if set(overview_mapping)!=set(DEFAULT_ROWS) or len(set(int(x) for x in overview_mapping.values()))!=11:
         raise ValueError('monthly_domain.metric_rows requires 11 unique overall KPI rows')
-    mapping={k:int(v) for k,v in mapping.items()}
-    if any(r<=0 or r==header_row for r in mapping.values()):
-        raise ValueError('Monthly metric rows must be positive and not equal the header row')
+    overview_mapping={k:int(v) for k,v in overview_mapping.items()}
+    if overview_mapping != DEFAULT_ROWS:
+        raise ValueError('Full monthly template must match weekly overall rows 3-13')
+    row_numbers=api.metric_rows(cfg)
+    if header_row in row_numbers:
+        raise ValueError('Monthly date header conflicts with a KPI row')
+    mapping={str(n):n for n in row_numbers}
     sid_env=cfg.get('spreadsheet_id_env','SPREADSHEET_ID')
     sid=os.environ.get(sid_env,'').strip()
     if not sid:
@@ -189,7 +206,8 @@ def run():
     sheets=build('sheets','v4',credentials=creds,cache_discovery=False)
     first_col=resolve_first_month_column(sheets,sid,tab,header_row,mc)
     # Validate actual tab and row-label layout before calculating any metrics.
-    assert_layout(sheets,sid,tab,mapping)
+    assert_layout(sheets,sid,tab,overview_mapping)
+    assert_page_layout(sheets,sid,tab,cfg)
     today=date.fromisoformat(args.today) if args.today else datetime.now(ZoneInfo(cfg['report']['timezone'])).date()
     selected=next_missing_month(sheets,sid,tab,header_row,first_col,first_month,eligible_date(cfg,today))
     if selected is None:
@@ -208,7 +226,9 @@ def run():
         raise RuntimeError('Monthly destination changed during API extraction; aborting')
     assert_blank(sheets,sid,tab,col,header_row,mapping)
     entries=[{'range':f'{api.quote_tab(tab)}!{col}{header_row}','values':[[key]]}]
-    entries += [{'range':f'{api.quote_tab(tab)}!{col}{mapping[k]}','values':[[v]]} for k,v in values.items()]
+    if set(values) != set(row_numbers):
+        raise RuntimeError('Monthly values do not match the full weekly KPI row mapping')
+    entries += [{'range':f'{api.quote_tab(tab)}!{col}{r}','values':[[values[r]]]} for r in sorted(values)]
     LOG.info('%s MONTHLY %s; column %s; metrics %d; dry_run=%s',tab,key,col,len(values),args.dry_run)
     if args.dry_run:
         for x in entries:
