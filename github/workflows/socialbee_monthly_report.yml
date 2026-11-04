@@ -1,0 +1,55 @@
+
+name: SocialBee Monthly Domain Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only - do not update Google Sheet"
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: socialbee-monthly-domain
+  cancel-in-progress: false
+
+jobs:
+  monthly-report:
+    name: Update SocialBee Monthly Domain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Validate Python
+        run: python -m py_compile monthly_domain.py
+
+      - name: Generate SocialBee Monthly Report
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          PYTHONUNBUFFERED: "1"
+          PREVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        shell: bash
+        run: |
+          if [ "$PREVIEW" = "true" ]; then
+            python monthly_domain.py --dry-run
+          else
+            python monthly_domain.py
+          fi
