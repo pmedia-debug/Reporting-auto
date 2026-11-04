@@ -1,0 +1,71 @@
+
+name: XOVI.de Monthly Domain Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only - do not update Google Sheet"
+        type: boolean
+        required: true
+        default: true
+
+  # Enable after successful testing
+  # schedule:
+  #   - cron: "30 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: xovi-de-monthly-domain
+  cancel-in-progress: false
+
+jobs:
+  monthly-report:
+    name: Update XOVI.de Monthly Domain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      # Step 1 - Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # Step 2 - Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # Step 3 - Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r xovi_de/requirements.txt
+
+      # Step 4 - Validate Python scripts
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile xovi_de/main.py
+          python -m py_compile xovi_de/monthly_domain.py
+
+      # Step 5 - Generate monthly report
+      - name: Generate XOVI.de Monthly Report
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          XOVI_DE_SHEET_ID: ${{ secrets.XOVI_DE_SHEET_ID }}
+          PYTHONUNBUFFERED: "1"
+          PREVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+
+        shell: bash
+        run: |
+          if [ "$PREVIEW" = "true" ]; then
+            echo "Running XOVI.de monthly dry run"
+            python xovi_de/monthly_domain.py --dry-run
+          else
+            echo "Running XOVI.de monthly live update"
+            python xovi_de/monthly_domain.py
+          fi
