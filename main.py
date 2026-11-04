@@ -1,6 +1,57 @@
+
+"""SocialBee SEO reporting automation."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import os
+import re
+
+from calendar import monthrange
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
+from zoneinfo import ZoneInfo
+
+import yaml
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+from google.analytics.data_v1beta import BetaAnalyticsDataClient
+from google.analytics.data_v1beta.types import (
+    DateRange,
+    Dimension,
+    Filter,
+    FilterExpression,
+    FilterExpressionList,
+    Metric,
+    RunReportRequest,
+)
+
+SCOPES = [
+    "https://www.googleapis.com/auth/analytics.readonly",
+    "https://www.googleapis.com/auth/webmasters.readonly",
+    "https://www.googleapis.com/auth/spreadsheets",
+]
+
+LOG = logging.getLogger("weekly_report")
+
+
+def creds():
+    raw = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+
     if not raw:
-        raise ValueError("GOOGLE_CREDENTIALS_JSON secret is missing")
-    return service_account.Credentials.from_service_account_info(json.loads(raw), scopes=SCOPES)
+        raise ValueError(
+            "GOOGLE_CREDENTIALS_JSON secret is missing"
+        )
+
+    return service_account.Credentials.from_service_account_info(
+        json.loads(raw),
+        scopes=SCOPES
+    )
+
 
 
 def col_num(s):
