@@ -57,7 +57,7 @@ pages:
   heading_row: 94
 
 
-onthly_domain:
+monthly_domain:
   enabled: true
   sheet_tab: "monthly domain"
   first_month: "2026-10"
