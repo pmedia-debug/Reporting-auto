@@ -1,0 +1,64 @@
+
+name: SolusVM SEO Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only - no Google Sheet changes"
+        type: boolean
+        required: true
+        default: true
+
+  # Enable after successful testing:
+  # schedule:
+  #   - cron: "30 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solusvm-seo-report
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update SolusVM Report
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r solusvm/requirements.txt
+
+      - name: Validate Python and configuration
+        run: |
+          python -m py_compile solusvm/main.py
+          python -c "import yaml; c=yaml.safe_load(open('solusvm/config.yaml')); assert len(c['pages'])*5+11 == 26"
+
+      - name: Generate SolusVM report
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          SOLUSVM_SHEET_ID: ${{ secrets.SOLUSVM_SHEET_ID }}
+          PREVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          PYTHONUNBUFFERED: "1"
+
+        shell: bash
+        run: |
+          if [ "$PREVIEW" = "true" ]; then
+            echo "Dry run - SolusVM"
+            python solusvm/main.py --dry-run
+          else
+            echo "Live update - SolusVM"
+            python solusvm/main.py
+          fi
