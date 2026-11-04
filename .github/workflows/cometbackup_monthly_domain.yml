@@ -1,0 +1,63 @@
+
+name: Comet Backup Monthly Domain Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only - do not update the Google Sheet"
+        required: true
+        type: boolean
+        default: true
+
+  # Enable after successful testing:
+  # schedule:
+  #   - cron: "30 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cometbackup-monthly-domain
+  cancel-in-progress: false
+
+jobs:
+  monthly-report:
+    name: Update Comet Backup Monthly Domain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python -m pip install -r cometbackup/requirements.txt
+
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile cometbackup/main.py
+          python -m py_compile cometbackup/monthly_domain.py
+
+      - name: Generate Comet Backup monthly report
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          COMETBACKUP_SHEET_ID: ${{ secrets.COMETBACKUP_SHEET_ID }}
+          PREVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          PYTHONUNBUFFERED: "1"
+        shell: bash
+        run: |
+          if [ "$PREVIEW" = "true" ]; then
+            echo "Running Comet Backup monthly dry run"
+            python cometbackup/monthly_domain.py --dry-run
+          else
+            echo "Running Comet Backup monthly live update"
+            python cometbackup/monthly_domain.py
+          fi
