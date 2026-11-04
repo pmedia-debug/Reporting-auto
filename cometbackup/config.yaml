@@ -82,3 +82,24 @@ pages:
 - label: /solutions/macos-workstations/
   path: /solutions/macos-workstations/
   heading_row: 157
+
+
+  monthly_domain:
+  enabled: true
+  sheet_tab: "monthly domain"
+  first_month: "2026-10"
+  first_month_column: "AUTO"
+  anchor_column: "L"
+  date_header_row: 2
+  metric_rows:
+    organic_sessions: 3
+    nonbrand_impressions: 4
+    nonbrand_clicks: 5
+    nonbrand_ctr: 6
+    overall_impressions: 7
+    overall_clicks: 8
+    overall_ctr: 9
+    brand_impressions: 10
+    brand_clicks: 11
+    brand_ctr: 12
+    conversions: 13
