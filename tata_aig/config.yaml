@@ -1,6 +1,6 @@
 properties:
-  ga4_property_id: "264910098"
-  gsc_site_url: "https://www.tataaig.com/"
+  ga4_property_id: "REPLACE_GA4_PROPERTY_ID"
+  gsc_site_url: "REPLACE_EXACT_GSC_PROPERTY"
   site_base_url: "https://www.tataaig.com"  # Verify canonical host
 
 report:
@@ -12,7 +12,7 @@ report:
   metric_start_row: 3
   label_column: null            # Set actual label column (e.g. A or K) after supplying your Sheet layout
   approved_layout: false       # Change to true ONLY after verifying mapping and destination
-  approved_special_filters: false  # Confirm AMP and review-excluding-AMP definitions first
+  approved_special_filters: false  # Confirm review-snippet without AMP semantics first
   timezone: "Asia/Kolkata"
   min_days_after_end: 3
   first_week_start: "2026-10-01"
@@ -22,10 +22,7 @@ report:
 segments:
   support_path: "/motor-insurance/car-insurance"
   blog_path: "/knowledge-center/car-insurance/"
-  # This hasn't been specified. Choose 'support', 'blog' or 'property' after checking GSC UI.
-  amp_scope: "REPLACE_WITH_SUPPORT_BLOG_OR_PROPERTY"
-  # The chosen AMP search appearance needs to match GSC's filter.
-  amp_appearance: "AMP_BLUE_LINK"
+  # AMP 3 KPI rows are intentionally skipped/left blank. No AMP configuration needed.
   review_appearance: "REVIEW_SNIPPET"
   brand_regex: "TATA|AIG"
   query_car_insurance_regex: "(?i)^car insurance$"

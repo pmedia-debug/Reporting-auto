@@ -42,8 +42,6 @@ def load_config(path):
     for k in ('ga4_property_id','gsc_site_url','site_base_url'):
         if not str(p.get(k, '')).strip() or str(p[k]).startswith('REPLACE_'):
             raise ValueError(f'Configure properties.{k} in {path}')
-    if not str(s.get('amp_scope','')).lower() in ('support','blog','property'):
-        raise ValueError('Choose segments.amp_scope = support, blog or property; GSC scope was not specified')
     if not str(r.get('label_column','')).strip() and r.get('label_column') is not None:
         raise ValueError('Set label_column to an actual column or null')
     if len(LABELS) != 32: raise AssertionError('Wrong KPI count')
@@ -214,9 +212,9 @@ def compute(cfg,ga,gsc,start,end):
     data+=gsc_metrics(gsc,site,start,end,support_filters)
     data+=gsc_metrics(gsc,site,start,end,[make_filter('query','includingRegex',s['query_car_insurance_regex'])],aggregation='byProperty')
     data+=gsc_metrics(gsc,site,start,end,[make_filter('query','includingRegex',s['query_tata_aig_car_insurance_regex'])],aggregation='byProperty')
-    amp_scope=s['amp_scope'].lower(); amp_filters={'support':[support], 'blog':[blog], 'property':[]}[amp_scope]
-    amp_filters=amp_filters+[make_filter('searchAppearance','equals',s['amp_appearance'])]
-    data+=gsc_metrics(gsc,site,start,end,amp_filters)
+    # AMP is currently excluded. Keep the three original positions reserved and blank.
+    # Do not call the GSC AMP API, and do not shift any following KPI rows.
+    data.extend([None, None, None])
     review_filters=[support,make_filter('searchAppearance','equals',s['review_appearance']),
                     make_filter('searchAppearance','notEquals',s['review_exclude_amp_appearance'])]
     data+=gsc_metrics(gsc,site,start,end,review_filters)
@@ -255,15 +253,17 @@ def run(cadence,config_path,dry_run,today_override=None):
     ensure_empty_and_labels(sheets,sid,tab,col,cfg,dry_run)
     if dry_run:
         for idx,(label,val) in enumerate(zip(LABELS,vals),start=int(r['metric_start_row'])):
-            LOG.info('PREVIEW %s!%s%d: %s = %s',tab,col,idx,label,val)
+            LOG.info('PREVIEW %s!%s%d: %s = %s',tab,col,idx,label,'SKIPPED (blank)' if val is None else val)
         LOG.info('DRY RUN: no Sheet values written')
         return
     entries=[{'range':f'{quote_tab(tab)}!{col}{r["header_row"]}','values':[[period_key(start,end)]]}]
     for row,val in enumerate(vals,start=int(r['metric_start_row'])):
+        if val is None:  # AMP slots are deliberately untouched / blank
+            continue
         entries.append({'range':f'{quote_tab(tab)}!{col}{row}','values':[[val]]})
     result=sheets.spreadsheets().values().batchUpdate(spreadsheetId=sid,body={
         'valueInputOption':'RAW','data':entries}).execute()
     expected=len(entries)
     if result.get('totalUpdatedCells')!=expected:
         raise RuntimeError(f'Unexpected updated-cell count {result.get("totalUpdatedCells")}, expected {expected}')
-    LOG.info('SUCCESS: wrote %s, %d KPI values to %s!%s',period_key(start,end),len(vals),tab,col)
+    LOG.info('SUCCESS: wrote %s, %d KPI values (%d AMP rows skipped) to %s!%s',period_key(start,end),len(vals)-vals.count(None),vals.count(None),tab,col)
