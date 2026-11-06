@@ -1,6 +1,6 @@
 properties:
-  ga4_property_id: "REPLACE_GA4_PROPERTY_ID"
-  gsc_site_url: "REPLACE_EXACT_GSC_PROPERTY"
+  ga4_property_id: "264910098"
+  gsc_site_url: "https://www.tataaig.com/"
   site_base_url: "https://www.tataaig.com"  # Verify canonical host
 
 report:
