@@ -27,7 +27,7 @@ segments:
   # The chosen AMP search appearance needs to match GSC's filter.
   amp_appearance: "AMP_BLUE_LINK"
   review_appearance: "REVIEW_SNIPPET"
-  brand_regex: "(?i)(tata|aig)"
+  brand_regex: "TATA|AIG"
   query_car_insurance_regex: "(?i)^car insurance$"
   query_tata_aig_car_insurance_regex: "(?i)^tata aig car insurance$"
   # 'exclude AMP' for review snippet: this uses excluding filter for this one AMP type.
