@@ -1,0 +1,38 @@
+properties:
+  ga4_property_id: "REPLACE_GA4_PROPERTY_ID"
+  gsc_site_url: "REPLACE_EXACT_GSC_PROPERTY"
+  site_base_url: "https://www.tataaig.com"  # Verify canonical host
+
+report:
+  sheet_id_env: "TATA_AIG_SHEET_ID"
+  weekly_tab: "weekly"
+  monthly_tab: "monthly"
+  first_column: "L"
+  header_row: 2
+  metric_start_row: 3
+  label_column: null            # Set actual label column (e.g. A or K) after supplying your Sheet layout
+  approved_layout: false       # Change to true ONLY after verifying mapping and destination
+  approved_special_filters: false  # Confirm AMP and review-excluding-AMP definitions first
+  timezone: "Asia/Kolkata"
+  min_days_after_end: 3
+  first_week_start: "2026-10-01"
+  first_month: "2026-10"
+  search_type: "web"
+
+segments:
+  support_path: "/motor-insurance/car-insurance"
+  blog_path: "/knowledge-center/car-insurance/"
+  # This hasn't been specified. Choose 'support', 'blog' or 'property' after checking GSC UI.
+  amp_scope: "REPLACE_WITH_SUPPORT_BLOG_OR_PROPERTY"
+  # The chosen AMP search appearance needs to match GSC's filter.
+  amp_appearance: "AMP_BLUE_LINK"
+  review_appearance: "REVIEW_SNIPPET"
+  brand_regex: "(?i)(tata|aig)"
+  query_car_insurance_regex: "(?i)^car insurance$"
+  query_tata_aig_car_insurance_regex: "(?i)^tata aig car insurance$"
+  # 'exclude AMP' for review snippet: this uses excluding filter for this one AMP type.
+  # Review snippets can overlap other AMP types. See README and verify GSC UI.
+  review_exclude_amp_appearance: "AMP_BLUE_LINK"
+
+# GA4: support/blog = Organic Search sessions by first landing page, no query strings.
+# GSC: support/blog = all matching canonical page URLs under the section.
