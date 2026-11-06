@@ -1,0 +1,68 @@
+
+name: Tata AIG Weekly SEO Report
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Preview only - do not update Google Sheet"
+        type: boolean
+        required: true
+        default: true
+
+  # Enable automatic reporting after successful testing.
+  # Runs daily at 10:00 AM IST.
+  # schedule:
+  #   - cron: "30 4 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tata-aig-weekly-report
+  cancel-in-progress: false
+
+jobs:
+  weekly-report:
+    name: Update Tata AIG Weekly Report
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r tata_aig/requirements.txt
+
+      - name: Validate Python syntax
+        run: |
+          python -m py_compile tata_aig/metrics.py
+          python -m py_compile tata_aig/weekly.py
+          python -m py_compile tata_aig/monthly.py
+
+      - name: Generate Tata AIG Weekly Report
+        env:
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          TATA_AIG_SHEET_ID: ${{ secrets.TATA_AIG_SHEET_ID }}
+          PYTHONUNBUFFERED: "1"
+          PREVIEW: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+
+        shell: bash
+        run: |
+          if [ "$PREVIEW" = "true" ]; then
+            echo "Running Tata AIG weekly dry run"
+            python tata_aig/weekly.py --dry-run
+          else
+            echo "Running Tata AIG weekly live update"
+            python tata_aig/weekly.py
+          fi
