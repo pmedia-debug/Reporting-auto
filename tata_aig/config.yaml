@@ -1,13 +1,13 @@
 properties:
-  ga4_property_id: "REPLACE_GA4_PROPERTY_ID"
-  gsc_site_url: "REPLACE_EXACT_GSC_PROPERTY"
+  ga4_property_id: "264910098"
+  gsc_site_url: "https://www.tataaig.com/"
   site_base_url: "https://www.tataaig.com"  # Verify canonical host
 
 report:
   sheet_id_env: "TATA_AIG_SHEET_ID"
   weekly_tab: "weekly"
   monthly_tab: "monthly"
-  first_column: "L"
+  first_column: "C"
   header_row: 2
   metric_start_row: 3
   label_column: null            # Set actual label column (e.g. A or K) after supplying your Sheet layout
