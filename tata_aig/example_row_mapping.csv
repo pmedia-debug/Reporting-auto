@@ -1,0 +1,33 @@
+Row (example),Metric label
+3,Organic Sessions - GA (D)
+4,Impressions - GSC (non blog)
+5,Clicks - GSC (non blog)
+6,CTR - GSC (non blog)
+7,"""Car Insurance"" - Impressions (Overall) - GSC"
+8,"""Car Insurance"" - Clicks - GSC"
+9,"""Car Insurance"" - CTR - GSC"
+10,TATA AIG Car Insurance - Impressions (Overall) - GSC
+11,TATA AIG Car Insurance - Clicks - GSC
+12,TATA AIG Car Insurance - CTR - GSC
+13,AMP Impressions - GSC
+14,AMP Clicks - GSC
+15,CTR - GSC [AMP]
+16,Rich Snippet Impressions (without AMP)
+17,Rich Snippet Clicks (without AMP)
+18,Rich Snippet CTR (without AMP)
+19,Mobile Impressions - GSC
+20,Mobile Clicks - GSC
+21,CTR - GSC [Mobile]
+22,Desktop Impressions - GSC
+23,Desktop Clicks - GSC
+24,CTR - GSC [Desktop]
+25,"""Tata|AIG"" Brand Impressions - GSC"
+26,Brand Clicks - GSC
+27,CTR - GSC [Brand]
+28,Non Brand Impressions - GSC
+29,Non Brand Clicks - GSC
+30,CTR - GSC [Non Brand]
+31,Blog Impressions GSC
+32,Blog Clicks GSC
+33,CTR - GSC [Blog]
+34,Blog Organic Sessions GA
