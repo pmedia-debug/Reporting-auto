@@ -1,4 +1,4 @@
-"""Shared Tata AIG GA4/GSC query and append-only Sheets reporting engine."""
+"""Shared Tata AIG GSC-only query and append-only Sheets reporting engine."""
 from __future__ import annotations
 import calendar
 import json
@@ -12,12 +12,9 @@ from zoneinfo import ZoneInfo
 import yaml
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from google.analytics.data_v1beta import BetaAnalyticsDataClient
-from google.analytics.data_v1beta.types import DateRange, Dimension, Metric, RunReportRequest, Filter, FilterExpression, FilterExpressionList
 
 LOG = logging.getLogger('tata_aig')
-SCOPES = ['https://www.googleapis.com/auth/analytics.readonly',
-          'https://www.googleapis.com/auth/webmasters.readonly',
+SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly',
           'https://www.googleapis.com/auth/spreadsheets']
 
 # Exact user-provided order. Default rows 3..34, editable via metric_start_row.
@@ -39,7 +36,7 @@ def load_config(path):
     cfg = yaml.safe_load(Path(path).read_text(encoding='utf-8'))
     if not isinstance(cfg, dict): raise ValueError('Invalid YAML config')
     p, r, s = (cfg[k] for k in ('properties','report','segments'))
-    for k in ('ga4_property_id','gsc_site_url','site_base_url'):
+    for k in ('gsc_site_url','site_base_url'):
         if not str(p.get(k, '')).strip() or str(p[k]).startswith('REPLACE_'):
             raise ValueError(f'Configure properties.{k} in {path}')
     if not str(r.get('label_column','')).strip() and r.get('label_column') is not None:
@@ -154,25 +151,6 @@ def path_regex(base,path):
     clean='/'+path.strip('/')
     return rf'^https?://{host_re}{re.escape(clean)}(?:/|\?|$)'
 
-def ga_landing_match(value,prefix):
-    # Reject parameterized URLs, fragments, partial/sloppy slug matches.
-    if not isinstance(value,str) or not value.startswith('/') or '?' in value or '#' in value:
-        return False
-    norm=prefix.rstrip('/')
-    return value == norm or value.startswith(norm + '/')
-
-def ga_sessions(client,property_id,start,end,path):
-    filter_expr=FilterExpression(filter=Filter(field_name='sessionDefaultChannelGroup',
-        string_filter=Filter.StringFilter(match_type=Filter.StringFilter.MatchType.EXACT,value='Organic Search')))
-    req=RunReportRequest(property=f'properties/{property_id}',
-        date_ranges=[DateRange(start_date=str(start),end_date=str(end))],
-        dimensions=[Dimension(name='landingPagePlusQueryString')],metrics=[Metric(name='sessions')],
-        dimension_filter=filter_expr,limit=100000)
-    res=client.run_report(req)
-    if res.row_count>len(res.rows): raise RuntimeError('GA4 result truncated; implement GA4 pagination')
-    return sum(int(float(row.metric_values[0].value)) for row in res.rows
-               if ga_landing_match(row.dimension_values[0].value,path))
-
 def gsc_query(client,site,start,end,filters=None,dimensions=None,aggregation='auto'):
     body={'startDate':str(start),'endDate':str(end),'type':'web',
           'dataState':'final','dimensions':dimensions or [],'aggregationType':aggregation,'rowLimit':25000}
@@ -201,14 +179,14 @@ def require_gsc_final(client,site,start,end):
     days={(start+timedelta(days=i)).isoformat() for i in range((end-start).days+1)}
     if not days.issubset(found): raise RuntimeError('GSC final data missing dates: '+str(sorted(days-found)))
 
-def compute(cfg,ga,gsc,start,end):
+def compute(cfg,gsc,start,end):
     p=cfg['properties']; s=cfg['segments']; site=p['gsc_site_url']; base=p['site_base_url']
     require_gsc_final(gsc,site,start,end)
     support=make_filter('page','includingRegex',path_regex(base,s['support_path']))
     blog=make_filter('page','includingRegex',path_regex(base,s['blog_path']))
     support_filters=[support]; blog_filters=[blog]
     data=[]
-    data.append(ga_sessions(ga,p['ga4_property_id'],start,end,s['support_path']))
+    data.append(None)  # Former GA4 support sessions: deliberately blank
     data+=gsc_metrics(gsc,site,start,end,support_filters)
     data+=gsc_metrics(gsc,site,start,end,[make_filter('query','includingRegex',s['query_car_insurance_regex'])],aggregation='byProperty')
     data+=gsc_metrics(gsc,site,start,end,[make_filter('query','includingRegex',s['query_tata_aig_car_insurance_regex'])],aggregation='byProperty')
@@ -223,7 +201,7 @@ def compute(cfg,ga,gsc,start,end):
     data+=gsc_metrics(gsc,site,start,end,[support,make_filter('query','includingRegex',s['brand_regex'])])
     data+=gsc_metrics(gsc,site,start,end,[support,make_filter('query','excludingRegex',s['brand_regex'])])
     data+=gsc_metrics(gsc,site,start,end,blog_filters)
-    data.append(ga_sessions(ga,p['ga4_property_id'],start,end,s['blog_path']))
+    data.append(None)  # Former GA4 blog sessions: deliberately blank
     if len(data)!=len(LABELS): raise AssertionError(f'Expected 32 KPI values, got {len(data)}')
     return data
 
@@ -233,7 +211,7 @@ def run(cadence,config_path,dry_run,today_override=None):
     if not dry_run and not r.get('approved_layout', False):
         raise RuntimeError('Live write blocked: verify Sheet row positions, then set report.approved_layout: true')
     if not dry_run and not r.get('approved_special_filters', False):
-        raise RuntimeError('Live write blocked: confirm AMP and review-without-AMP filter semantics first')
+        raise RuntimeError('Live write blocked: confirm review-without-AMP filter semantics first')
     today=date.fromisoformat(today_override) if today_override else datetime.now(ZoneInfo(r['timezone'])).date()
     auth=creds(); sheets=build('sheets','v4',credentials=auth,cache_discovery=False)
     tab=r[f'{cadence}_tab']
@@ -245,8 +223,7 @@ def run(cadence,config_path,dry_run,today_override=None):
     LOG.info('%s: %s -> %s!%s (%d KPIs), dry_run=%s',cadence,period_key(start,end),tab,col,len(LABELS),dry_run)
     ensure_empty_and_labels(sheets,sid,tab,col,cfg,dry_run)
     gsc=build('searchconsole','v1',credentials=auth,cache_discovery=False)
-    ga=BetaAnalyticsDataClient(credentials=auth)
-    vals=compute(cfg,ga,gsc,start,end)
+    vals=compute(cfg,gsc,start,end)
     # Recheck destination before writing. GitHub concurrency must also be enabled.
     _,still_col=get_headers(sheets,sid,tab,r)
     if still_col!=col: raise RuntimeError('Sheet changed while generating report; refusing overwrite')
@@ -258,7 +235,7 @@ def run(cadence,config_path,dry_run,today_override=None):
         return
     entries=[{'range':f'{quote_tab(tab)}!{col}{r["header_row"]}','values':[[period_key(start,end)]]}]
     for row,val in enumerate(vals,start=int(r['metric_start_row'])):
-        if val is None:  # AMP slots are deliberately untouched / blank
+        if val is None:  # GA4 and AMP slots deliberately untouched / blank
             continue
         entries.append({'range':f'{quote_tab(tab)}!{col}{row}','values':[[val]]})
     result=sheets.spreadsheets().values().batchUpdate(spreadsheetId=sid,body={
@@ -266,4 +243,4 @@ def run(cadence,config_path,dry_run,today_override=None):
     expected=len(entries)
     if result.get('totalUpdatedCells')!=expected:
         raise RuntimeError(f'Unexpected updated-cell count {result.get("totalUpdatedCells")}, expected {expected}')
-    LOG.info('SUCCESS: wrote %s, %d KPI values (%d AMP rows skipped) to %s!%s',period_key(start,end),len(vals)-vals.count(None),vals.count(None),tab,col)
+    LOG.info('SUCCESS: wrote %s, %d GSC KPI values (%d GA4/AMP rows skipped) to %s!%s',period_key(start,end),len(vals)-vals.count(None),vals.count(None),tab,col)
