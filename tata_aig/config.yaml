@@ -7,8 +7,8 @@ report:
   weekly_tab: "weekly"
   monthly_tab: "monthly"
   first_column: "C"
-  header_row: 2
-  metric_start_row: 3
+  header_row: 1
+  metric_start_row: 2
   label_column: "B"            # Set actual label column (e.g. A or K) after supplying your Sheet layout
   approved_layout: false       # Change to true ONLY after verifying mapping and destination
   approved_special_filters: false  # Confirm review-snippet without AMP semantics first
