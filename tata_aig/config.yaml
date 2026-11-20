@@ -1,6 +1,5 @@
 properties:
-  ga4_property_id: "264910098"
-  gsc_site_url: "https://www.tataaig.com/"
+  gsc_site_url: "REPLACE_EXACT_GSC_PROPERTY"
   site_base_url: "https://www.tataaig.com"  # Verify canonical host
 
 report:
@@ -31,5 +30,5 @@ segments:
   # Review snippets can overlap other AMP types. See README and verify GSC UI.
   review_exclude_amp_appearance: "AMP_BLUE_LINK"
 
-# GA4: support/blog = Organic Search sessions by first landing page, no query strings.
+# GA4 metrics intentionally disabled; original rows remain blank.
 # GSC: support/blog = all matching canonical page URLs under the section.
